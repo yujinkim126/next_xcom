@@ -1,54 +1,11 @@
 import style from "./signup.module.css";
 import BackButton from "./BackButton";
-import { redirect } from "next/navigation";
+import onSubmit from "../_lib/signup";
+import { useFormState, useFormStatus } from "react-dom";
 
 export default function SignupModal() {
-  const submit = async (formData: FormData) => {
-    // 폼 이벤트는 use server 선언
-    "use server";
-
-    // 유효성 검사
-    if (!formData.get("id")) {
-      return { message: "아이디를 입력해주세요." };
-    }
-    if (!formData.get("name")) {
-      return { message: "닉네임을 입력해주세요." };
-    }
-    if (!formData.get("password")) {
-      return { message: "비밀번호를 입력해주세요." };
-    }
-    if (!formData.get("image")) {
-      return { message: "프로필 사진을 입력해주세요." };
-    }
-
-    let shouldRedirect = false;
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
-        {
-          method: "post",
-          body: formData,
-          credentials: "include", // 쿠키 전달
-        }
-      );
-
-      // 403 에러 테스트
-      if (response.status === 403) {
-        return { message: "user_exists" };
-      }
-
-      // shouldRedirect가 true일때만 redirect 되게 하기위함
-      shouldRedirect = true;
-    } catch (err) {
-      console.error(err);
-    }
-
-    if (shouldRedirect) {
-      // 홈으로 리다이렉트
-      redirect("/home");
-    }
-  };
+  const [state, formAction] = useFormState(onSubmit, { message: "" });
+  const { pending } = useFormStatus();
 
   return (
     <>
@@ -58,7 +15,7 @@ export default function SignupModal() {
             <BackButton />
             <div>계정을 생성하세요.</div>
           </div>
-          <form action={submit}>
+          <form action={formAction}>
             <div className={style.modalBody}>
               <div className={style.inputDiv}>
                 <label className={style.inputLabel} htmlFor="id">
@@ -114,7 +71,10 @@ export default function SignupModal() {
               </div>
             </div>
             <div className={style.modalFooter}>
-              <button className={style.actionButton}>가입하기</button>
+              <button className={style.actionButton} disabled={pending}>
+                가입하기
+              </button>
+              <div className={style.error}>{state?.message}</div>
             </div>
           </form>
         </div>
